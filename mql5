@@ -1,0 +1,135 @@
+
+// Program: AI Revolution PRO MT5
+// Developer's Site: forexroboteasy.com
+// Development: Forex Robot Easy Team
+
+// Include necessary libraries
+#include <Trade\Trade.mqh>
+
+// Define trading schedule parameters
+datetime tradingStartTime = D'01:30:00'; // Trading start time
+datetime tradingEndTime = D'22:30:00'; // Trading end time
+int minTradesPerDay = 1; // Minimum number of trades per day
+int maxTradesPerDay = 10; // Maximum number of trades per day
+
+// Define risk management parameters
+double riskRatio = 1; // Risk ratio (Stop Loss : Take Profit)
+bool useMartingale = false; // Use Martingale strategy
+
+// Define adaptable Level parameter
+double levelParameter = 0.5; // Initial Level parameter
+
+// Define trade entry parameters
+double entryThreshold = 0.001; // Entry threshold for trade
+
+// Define trade exit parameters
+double stopLoss = 0.01; // Stop Loss level
+double takeProfit = 0.01; // Take Profit level
+
+// Initialize trade object
+CTrade trade;
+
+// Check if it's within trading schedule
+bool IsWithinTradingSchedule(datetime currentTime)
+{
+    return (currentTime >= tradingStartTime && currentTime <= tradingEndTime);
+}
+
+// Check if spread is within acceptable range
+bool IsSpreadAcceptable()
+{
+    double currentSpread = MarketInfo(Symbol(), MODE_SPREAD);
+    double maxSpread = MarketInfo(Symbol(), MODE_SPREADMAX);
+    
+    return (currentSpread <= maxSpread);
+}
+
+// Check if there is an available slot for trading
+bool IsTradeSlotAvailable()
+{
+    int totalOpenTrades = trade.PositionsTotal();
+    
+    return (totalOpenTrades < maxTradesPerDay);
+}
+
+// Adjust Level parameter based on market conditions
+void AdjustLevelParameter()
+{
+    double currentPrice = MarketInfo(Symbol(), MODE_BID);
+    
+    // Adjust Level parameter based on tick movements or market price
+    // Add your logic here
+    
+    // Example: Randomly adjust Level parameter within a range
+    double minLevel = 0.1;
+    double maxLevel = 1.0;
+    levelParameter = RandomRange(minLevel, maxLevel);
+}
+
+// Trade entry logic
+void TradeEntry()
+{
+    double currentPrice = MarketInfo(Symbol(), MODE_BID);
+    
+    // Add your logic here to identify suitable trade entry points based on AI Revolution PRO MT5 strategy
+    
+    // Example: Trade entry based on price threshold
+    if (currentPrice > entryThreshold)
+    {
+        // Place trade orders
+        trade.Buy(0.01, Symbol(), currentPrice, stopLoss, takeProfit);
+    }
+}
+
+// Trade exit logic
+void TradeExit()
+{
+    for (int i = 0; i < trade.PositionsTotal(); i++)
+    {
+        if (trade.PositionSelect(i))
+        {
+            double openPrice = trade.PositionGetDouble(POSITION_PRICE_OPEN);
+            double currentPrice = MarketInfo(Symbol(), MODE_BID);
+            
+            // Check if trade reached Stop Loss or Take Profit level
+            if (currentPrice <= openPrice - stopLoss || currentPrice >= openPrice + takeProfit)
+            {
+                // Close trade
+                trade.PositionClose(trade.PositionGetTicket());
+            }
+        }
+    }
+}
+
+// Main trading function
+void OnTick()
+{
+    datetime currentTime = TimeLocal();
+    
+    // Check if it's within trading schedule
+    if (IsWithinTradingSchedule(currentTime))
+    {
+        // Check if spread is acceptable
+        if (IsSpreadAcceptable())
+        {
+            // Check if there is an available slot for trading
+            if (IsTradeSlotAvailable())
+            {
+                // Adjust Level parameter based on market conditions
+                AdjustLevelParameter();
+                
+                // Trade entry logic
+                TradeEntry();
+            }
+        }
+    }
+    
+    // Trade exit logic
+    TradeExit();
+}
+
+// Helper function to generate random number within a range
+double RandomRange(double min, double max)
+{
+    return min + (max - min) * MathRand() / RAND_MAX;
+}
